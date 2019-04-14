@@ -125,7 +125,11 @@ func TestRoundTrip(t *testing.T) {
 					}
 					v.Opts.Permissions |= os.ModeDir
 				} else {
-					fw := w.File(v.Path, v.Opts)
+					fw, err := w.File(v.Path, v.Opts)
+					if err != nil {
+						pw.CloseWithError(err)
+						return
+					}
 					n, err := fw.Write([]byte(v.Data))
 					if err != nil {
 						pw.CloseWithError(err)

@@ -93,8 +93,14 @@ func NewWriter(dst io.Writer, opts StreamOptions) (*Writer, error) {
 }
 
 // File creates a new file stream at the given path.
-// Writing multiple files simultaneously is not supported.
-func (w *Writer) File(path string, opts FileOptions) io.WriteCloser {
+// The file must be closed in order to be committed to the stream.
+// Attempting to call File or Directory before closing a file may result in an error.
+func (w *Writer) File(path string, opts FileOptions) (io.WriteCloser, error) {
+	if w.writing {
+		return nil, errors.New("attempted to open a file stream before finishing the previous")
+	}
+	w.writing = true
+	w.curFile++
 	return &fileWriter{
 		stream: w,
 		hdr: fileHeader{
@@ -103,13 +109,25 @@ func (w *Writer) File(path string, opts FileOptions) io.WriteCloser {
 			User:  opts.User,
 			Group: opts.Group,
 		},
-	}
+		fileNo: w.curFile,
+	}, nil
 }
 
 // Directory creates a directory in the stream with the given path.
 func (w *Writer) Directory(path string, opts FileOptions) error {
 	opts.Permissions |= os.ModeDir
-	return w.File(path, opts).Close()
+
+	f, err := w.File(path, opts)
+	if err != nil {
+		return err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ErrWriteInterrupted indicates that a close operation interrupted a file stream and may have resulted in a corrupted stream.
@@ -185,49 +203,43 @@ func (w *Writer) write(file uint64, dat []byte) (int, error) {
 	return len(dat), nil
 }
 
-func (w *Writer) startFile(hdr fileHeader) (uint64, error) {
+func (w *Writer) startFile(hdr fileHeader) error {
 	if w.closed {
-		return 0, errors.New("filestream closed")
-	}
-
-	if w.writing {
-		return 0, errors.New("attempted to write another file while one is already streaming")
+		return errors.New("filestream closed")
 	}
 
 	if strings.Contains(hdr.Path, "\x00") {
-		return 0, errors.New("illegal null character in file path")
+		return errors.New("illegal null character in file path")
 	}
-
-	w.curFile++
-	w.writing = true
 
 	err := json.NewEncoder(&w.w).Encode(hdr)
 	if err != nil {
-		return 0, fmt.Errorf("failed to start file stream: %s", err)
+		return fmt.Errorf("failed to start file stream: %s", err)
 	}
 	err = w.w.WriteByte('\x00')
 	if err != nil {
-		return 0, fmt.Errorf("failed to start file stream: %s", err)
+		return fmt.Errorf("failed to start file stream: %s", err)
 	}
 
-	return w.curFile, nil
+	return nil
 }
 
 // fileWriter is a stream for writing a file.
 type fileWriter struct {
-	stream *Writer
-	fileNo uint64
-	hdr    fileHeader
+	stream  *Writer
+	fileNo  uint64
+	started bool
+	hdr     fileHeader
 }
 
 // Write writes the data to the file stream.
 func (fw *fileWriter) Write(data []byte) (int, error) {
-	if fw.fileNo == 0 {
-		no, err := fw.stream.startFile(fw.hdr)
+	if !fw.started {
+		fw.started = true
+		err := fw.stream.startFile(fw.hdr)
 		if err != nil {
 			return 0, err
 		}
-		fw.fileNo = no
 	}
 
 	if len(data) == 0 {
@@ -240,7 +252,7 @@ func (fw *fileWriter) Write(data []byte) (int, error) {
 // Close closes a file stream.
 func (fw *fileWriter) Close() error {
 	// for 0 length files, start the stream
-	if fw.fileNo == 0 {
+	if !fw.started {
 		_, err := fw.Write(nil)
 		if err != nil {
 			return err

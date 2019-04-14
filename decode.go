@@ -107,6 +107,7 @@ func (r *Reader) Next() bool {
 	err = json.Unmarshal([]byte(jd), &hdr)
 	if err != nil {
 		r.err = err
+		return false
 	}
 
 	if hdr.Path == "\x00" {
