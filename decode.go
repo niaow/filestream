@@ -98,6 +98,11 @@ func (r *Reader) Next() (fr *FileReader, err error) {
 
 	if hdr.Path == "\x00" {
 		r.closed = true
+		_, err = r.stream.Read([]byte{0})
+		if err != io.EOF {
+			err = nil
+			return nil, errors.New("excess data")
+		}
 		if r.closer != nil {
 			err = r.closer.Close()
 			if err != nil {

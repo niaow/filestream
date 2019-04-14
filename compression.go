@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 
 	"github.com/pierrec/lz4"
 )
@@ -29,7 +28,6 @@ func compress(algo string, level int, dst io.Writer) (io.WriteCloser, error) {
 		}
 		return gzip.NewWriterLevel(dst, level)
 	case "lz4":
-		log.Println("lz4 doesnt work yet")
 		w := lz4.NewWriter(dst)
 		w.Header.CompressionLevel = level
 		return w, nil

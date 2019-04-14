@@ -84,7 +84,7 @@ func TestRoundTrip(t *testing.T) {
 				},
 			},
 		},
-		/*{
+		{
 			StreamOpts: filestream.StreamOptions{
 				Compression: "lz4",
 			},
@@ -98,7 +98,7 @@ func TestRoundTrip(t *testing.T) {
 					Data: "hello world",
 				},
 			},
-		},*/
+		},
 	}
 	for _, c := range tbl {
 		var wg sync.WaitGroup
