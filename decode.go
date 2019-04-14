@@ -24,6 +24,10 @@ type Reader struct {
 
 	// closer is the io.Closer used to be closed after read completed
 	closer io.Closer
+
+	// stored reader or error from call to Next
+	fr  *FileReader
+	err error
 }
 
 // NewReader creates a new Reader which reads from the source.
@@ -66,17 +70,25 @@ func NewReader(src io.Reader) (*Reader, error) {
 	return r, nil
 }
 
-// Next gets the reader of the next file.
-// Returns io.EOF at the end of the stream.
-// File must be read completely before calling Next again.
-// Directories do not need to be read, and have no body.
-func (r *Reader) Next() (fr *FileReader, err error) {
+// Next checks if there is another file available.
+// On error, this will return false, and a call to .Err() will return the error.
+// The file can be obtained by calling .File()
+func (r *Reader) Next() bool {
+	r.fr, r.err = nil, nil
+
+	defer func() {
+		if r.err != nil {
+			r.fr = nil
+		}
+	}()
+
 	if r.closed {
-		return nil, io.EOF
+		return false
 	}
 
 	if !r.ready {
-		return nil, errors.New("requested next file before finishing previous")
+		r.err = errors.New("requested next file before finishing previous")
+		return false
 	}
 
 	r.ready = false
@@ -86,22 +98,23 @@ func (r *Reader) Next() (fr *FileReader, err error) {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
 		}
-		return nil, err
+		r.err = err
+		return false
 	}
 	jd = jd[:len(jd)-1] // remove trailing null character
 
 	var hdr fileHeader
 	err = json.Unmarshal([]byte(jd), &hdr)
 	if err != nil {
-		return nil, err
+		r.err = err
 	}
 
 	if hdr.Path == "\x00" {
 		r.closed = true
 		_, err = r.stream.Read([]byte{0})
 		if err != io.EOF {
-			err = nil
-			return nil, errors.New("excess data")
+			r.err = errors.New("excess data")
+			return false
 		}
 		if r.closer != nil {
 			err = r.closer.Close()
@@ -109,29 +122,45 @@ func (r *Reader) Next() (fr *FileReader, err error) {
 				if err == io.EOF {
 					err = io.ErrUnexpectedEOF
 				}
-				return nil, err
+				r.err = err
+				return false
 			}
 		}
-		return nil, io.EOF
+		return false
 	}
 
-	fr = &FileReader{
+	r.fr = &FileReader{
 		reader: r,
 		hdr:    hdr,
 	}
 
-	if fr.IsDir() {
+	if r.fr.IsDir() {
 		// dir should be zero length - read terminator
-		_, err = fr.Read(nil)
+		_, err = r.fr.Read(nil)
 		if err == nil {
-			return nil, fmt.Errorf("expected empty body for directory %q but got body", hdr.Path)
+			r.err = fmt.Errorf("expected empty body for directory %q but got body", hdr.Path)
+			return false
 		}
 		if err != io.EOF {
-			return nil, err
+			r.err = err
+			return false
 		}
 	}
 
-	return fr, nil
+	return true
+}
+
+// File returns the currently selected file.
+// File must be read completely before calling Next again.
+// Directories do not need to be read, and have no body.
+func (r *Reader) File() *FileReader {
+	return r.fr
+}
+
+// Err returns the error from the last call to .Next().
+// If there is no error, nil will be returned.
+func (r *Reader) Err() error {
+	return r.err
 }
 
 // FileReader is a reader of a single file in a stream.

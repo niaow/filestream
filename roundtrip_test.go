@@ -154,14 +154,8 @@ func TestRoundTrip(t *testing.T) {
 			t.Fatalf("failed to open reader: %s", err)
 		}
 		res := []testFile{}
-		for {
-			fr, err := r.Next()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				t.Fatalf("failed to get next file reader: %s", err)
-			}
+		for r.Next() {
+			fr := r.File()
 
 			var buf bytes.Buffer
 			_, err = io.Copy(&buf, fr)
@@ -175,6 +169,9 @@ func TestRoundTrip(t *testing.T) {
 				Data: buf.String(),
 				Opts: fr.Opts(),
 			})
+		}
+		if err := r.Err(); err != nil {
+			t.Fatalf("failed to get next file reader: %s", err)
 		}
 		wg.Wait()
 		if diff := cmp.Diff(c.Files, res); diff != "" {
