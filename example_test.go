@@ -54,6 +54,11 @@ func Example_minimal() {
 		fmt.Printf("File %q: %s\n", f.Path(), string(dat))
 	}
 
+	// check for error in streaming
+	if err = r.Err(); err != nil {
+		log.Fatal(err)
+	}
+
 	// Output:
 	// File "hello.txt": Hello World!
 	// File "smile.txt": ☺
