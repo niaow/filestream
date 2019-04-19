@@ -88,7 +88,7 @@ func main() {
 				panic(err)
 			}
 		} else {
-			err = filestream.DecodeStream(d, filestream.DecodeOptions{
+			err = filestream.DecodeFiles(d, filestream.DecodeOptions{
 				Base:                base,
 				PreservePermissions: perms,
 				PreserveUser:        users,

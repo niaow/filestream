@@ -148,8 +148,8 @@ type DecodeOptions struct {
 	DefaultOpts FileOptions
 }
 
-// DecodeStream decodes a filestream to the filesystem.
-func DecodeStream(src *Reader, opts DecodeOptions) error {
+// DecodeFiles decodes a filestream to the filesystem.
+func DecodeFiles(src *Reader, opts DecodeOptions) error {
 	if opts.DefaultOpts.Permissions == 0 {
 		opts.DefaultOpts.Permissions = 0640
 	}
