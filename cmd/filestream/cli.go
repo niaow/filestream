@@ -34,6 +34,10 @@ func main() {
 	flag.BoolVar(&list, "t", false, "list files & lengths instead of writing")
 	flag.Parse()
 
+	if list {
+		decode = true
+	}
+
 	if decode {
 		var sr io.ReadCloser
 		if stream == "-" {
