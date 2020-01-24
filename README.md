@@ -1,4 +1,4 @@
-# filestream [![GoDoc](https://godoc.org/github.com/jadr2ddude/filestream?status.svg)](https://godoc.org/github.com/jadr2ddude/filestream) [![Build Status](https://travis-ci.org/jadr2ddude/filestream.svg?branch=master)](https://travis-ci.org/jadr2ddude/filestream)
+# filestream [![GoDoc](https://godoc.org/github.com/jaddr2line/filestream?status.svg)](https://godoc.org/github.com/jaddr2line/filestream) [![Build Status](https://travis-ci.org/jaddr2line/filestream.svg?branch=master)](https://travis-ci.org/jaddr2line/filestream)
 A system for efficiently streaming bundles of files over a connection.
 
 Features:
@@ -17,7 +17,7 @@ This is also potentially useful for data import/export.
 A command line interface has been created as a debugging tool and a demo.
 To install it, run:
 ```
-go get github.com/jadr2ddude/filestream/cmd/filestream/...
+go get github.com/jaddr2line/filestream/cmd/filestream/...
 ```
 
 To encode files to stdout:
