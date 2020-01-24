@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	"github.com/jadr2ddude/filestream"
+	"github.com/jaddr2line/filestream"
 )
 
 func Example_minimal() {

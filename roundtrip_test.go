@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jadr2ddude/filestream"
+	"github.com/jaddr2line/filestream"
 )
 
 type testFile struct {

@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/jadr2ddude/filestream"
+	"github.com/jaddr2line/filestream"
 )
 
 func main() {
