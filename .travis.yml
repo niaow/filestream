@@ -4,15 +4,13 @@ os:
   - linux
   - osx
 go:
-  - "1.8.x"
-  - "1.9.x"
-  - "1.10.x"
   - "1.11.x"
   - "1.12.x"
+  - "1.13.x"
   - master
 matrix:
   allow_failures:
     - go: master
   fast_finish: true
 script:
-  - GO111MODULE=off go test -v -race -timeout=1m ./...
+  - GO111MODULE=on go test -v -race -mod=vendor -timeout=1m ./...
